@@ -1,0 +1,153 @@
+category_type,category,order
+Deprivation deciles,Decile 1 (most deprived),1
+Deprivation deciles,Decile 2,2
+Deprivation deciles,Decile 3,3
+Deprivation deciles,Decile 4,4
+Deprivation deciles,Decile 5,5
+Deprivation deciles,Decile 6,6
+Deprivation deciles,Decile 7,7
+Deprivation deciles,Decile 8,8
+Deprivation deciles,Decile 9,9
+Deprivation deciles,Decile 10 (least deprived),10
+Region,North East,11
+Region,North West,12
+Region,Yorkshire and the Humber,13
+Region,Yorkshire and The Humber,14
+Region,East Midlands,15
+Region,West Midlands,16
+Region,East of England,17
+Region,London,18
+Region,South East,19
+Region,South West,20
+Sex,Persons,21
+Sex,Female,22
+Sex,Male,23
+location,United Kingdom,24
+location,France,25
+location,Germany,26
+location,Italy,27
+location,Poland,28
+location,Spain,29
+Deprivation decile,1 = most deprived,30
+Deprivation decile,2,31
+Deprivation decile,3,32
+Deprivation decile,4,33
+Deprivation decile,5,34
+Deprivation decile,6,35
+Deprivation decile,7,36
+Deprivation decile,8,37
+Deprivation decile,9,38
+Deprivation decile,10 = least deprived,39
+LSOA-based deprivation decile,Decile 1 (most deprived),40
+LSOA-based deprivation decile,Decile 2,41
+LSOA-based deprivation decile,Decile 3,42
+LSOA-based deprivation decile,Decile 4,43
+LSOA-based deprivation decile,Decile 5,44
+LSOA-based deprivation decile,Decile 6,45
+LSOA-based deprivation decile,Decile 7,46
+LSOA-based deprivation decile,Decile 8,47
+LSOA-based deprivation decile,Decile 9,48
+LSOA-based deprivation decile,Decile 10 (least deprived),49
+By age,<1,50
+By age,1-9,51
+By age,10-19,52
+By age,20-29,53
+By age,30-39,54
+By age,40-49,55
+By age,50-59,56
+By age,60-69,57
+By age,70-79,58
+By age,80-89,59
+By age,90+,60
+Deprivation,Lowest income,61
+Deprivation,2nd,62
+Deprivation,3rd,63
+Deprivation,4th,64
+Deprivation,Highest income,65
+Deprivation,<b></b>Most deprived,66
+Deprivation,<b></b>2nd,67
+Deprivation,<b></b>3rd,68
+Deprivation,<b></b>4th,69
+Deprivation,<b></b>Least deprived,70
+Deprivation,Decile 1 (most deprived),71
+Deprivation,Decile 2,72
+Deprivation,Decile 3,73
+Deprivation,Decile 4,74
+Deprivation,Decile 5,75
+Deprivation,Decile 6,76
+Deprivation,Decile 7,77
+Deprivation,Decile 8,78
+Deprivation,Decile 9,79
+Deprivation,Decile 10 (least deprived),80
+LSOA11 deprivation deciles in England,Decile 1 (most deprived),81
+LSOA11 deprivation deciles in England,Decile 2,82
+LSOA11 deprivation deciles in England,Decile 3,83
+LSOA11 deprivation deciles in England,Decile 4,84
+LSOA11 deprivation deciles in England,Decile 5,85
+LSOA11 deprivation deciles in England,Decile 6,86
+LSOA11 deprivation deciles in England,Decile 7,87
+LSOA11 deprivation deciles in England,Decile 8,88
+LSOA11 deprivation deciles in England,Decile 9,89
+LSOA11 deprivation deciles in England,Decile 10 (least deprived),90
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Most deprived decile (IMD2019),91
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Second most deprived decile (IMD2019),92
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Third more deprived decile (IMD2019),93
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Fourth more deprived decile (IMD2019),94
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Fifth more deprived decile (IMD2019),95
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Fifth less deprived decile (IMD2019),96
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Fourth less deprived decile (IMD2019),97
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Third less deprived decile (IMD2019),98
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Second least deprived decile (IMD2019),99
+"County & UA deprivation deciles in England (IMD2019, 4/21 geography)",Least deprived decile (IMD2019),100
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Most deprived decile (IMD2019),101
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Second most deprived decile (IMD2019),102
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Third more deprived decile (IMD2019),103
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Fourth more deprived decile (IMD2019),104
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Fifth more deprived decile (IMD2019),105
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Fifth less deprived decile (IMD2019),106
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Fourth less deprived decile (IMD2019),107
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Third less deprived decile (IMD2019),108
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Second least deprived decile (IMD2019),109
+"District & UA deprivation deciles in England (IMD2019, 4/20 geog.)",Least deprived decile (IMD2019),110
+Working status,Working,111
+Working status,Inactive,112
+Working status,Unemployed,113
+Ethnic groups,Any other ethnic group,114
+Ethnic groups,Asian / Asian British,115
+Ethnic groups,Black / Black British,116
+Ethnic groups,Mixed / Multiple ethnic groups,117
+Ethnic groups,White,118
+Ethnic groups (detailed Asian),Any other Asian background,119
+Ethnic groups (detailed Asian),Bangladeshi,120
+Ethnic groups (detailed Asian),Chinese,121
+Ethnic groups (detailed Asian),Indian,122
+Ethnic groups (detailed Asian),Pakistani,123
+Ethnic groups (detailed Black),Any other Black background,124
+Ethnic groups (detailed Black),Black African,125
+Ethnic groups (detailed Black),Black Caribbean,126
+Ethnic groups,Indian,127
+Ethnic groups,Not stated / invalid,128
+Ethnic groups,Pakistani,129
+Ethnic groups,White and Asian,130
+Ethnic groups,White and Black African,131
+Ethnic groups,White and Black Caribbean,132
+Ethnic groups,White British,133
+Ethnic groups,Any other Asian background,134
+Ethnic groups,Any other Black background,135
+Ethnic groups,Any other mixed background,136
+Ethnic groups,Any other White background,137
+Ethnic groups,Bangladeshi,138
+Ethnic groups,Black African,139
+Ethnic groups,Black Caribbean,140
+Ethnic groups,Chinese,141
+Ethnic groups,White Irish,142
+LSOA11 deprivation deciles within area,Decile 1 (most deprived),143
+LSOA11 deprivation deciles within area,Decile 2,144
+LSOA11 deprivation deciles within area,Decile 3,145
+LSOA11 deprivation deciles within area,Decile 4,146
+LSOA11 deprivation deciles within area,Decile 5,147
+LSOA11 deprivation deciles within area,Decile 6,148
+LSOA11 deprivation deciles within area,Decile 7,149
+LSOA11 deprivation deciles within area,Decile 8,150
+LSOA11 deprivation deciles within area,Decile 9,151
+LSOA11 deprivation deciles within area,Decile 10 (least deprived),152
