@@ -1,7 +1,11 @@
-dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"), 
-                           breakdown = NULL, orientation = "v",
-                           x_axis_title = NULL, y_axis_title = NULL, plot_title = NULL,
-                           gap_factor = 0.045, lci = NULL, uci = NULL, ...) {
+dropdown_plots <- function(data, x, y, dropdown, plot_type = c("bar", "line"), 
+                           breakdown = NULL, orientation = "v", 
+                           palette = "PuBu",
+                           text = NULL, xnudge = 0, ynudge = 0,
+                           x_axis_title = NULL, y_axis_title = NULL, plot_title = "",
+                           gap_factor = 0.045, lci = NULL, uci = NULL,
+                           x_axis_options = NULL, y_axis_options = NULL,
+                           fix_axes = TRUE, bar_line = NULL, figure_name = NULL, ...) {
   
   plot_type <- match.arg(plot_type)
   
@@ -33,30 +37,69 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
     )
   }
   
+  # swapping labels for horizontal bar plot
+  if (orientation == "h") {
+    x_axis_temp <- x_axis_title
+    y_axis_temp <- y_axis_title
+
+    x_axis_title <- y_axis_temp
+    y_axis_title <- x_axis_temp
+
+    error_x <- errors
+    error_y <- NULL
+
+    y_temp <- y
+    y <- x
+    x <- y_temp
+
+  } else {
+
+    error_x <- NULL
+    error_y <- errors
+
+  }
+  
+  # Save data ------------------------------------------------------------------
+  if (!is.null(figure_name)) {
+    save_data(data, x = x, y = y, breakdown = breakdown, bar_line = bar_line, dropdown = dropdown, figure_name = figure_name)
+  }
+  
   x_plot <- {{ x }}
   y_plot <- {{ y }}
+  bar_line_plot <- {{ bar_line }}
   
   x <- formula_to_sym(x)
   y <- formula_to_sym(y)
-  group_type <- formula_to_sym(group_type)
+  dropdown <- formula_to_sym(dropdown)
+  bar_line <- formula_to_sym(bar_line)
   
+  # Fixing factors -------------------------------------------------------------
+  # This is a bit of mess - sorry - I imagine it can be cleaned up
+  # The idea is that we need the breakdowns for every plot to be unique between 
+  # plots. Sometimes we'd actually like the same breakdowns in each plot, so we 
+  # add <b></b> to the start of breakdowns to make them unique. A bit nasty, but 
+  # an easy way to make them unique to R but display exactly the same.
+  # Similarly, if we order our data by the x column (for bar plots) it should 
+  # never mix up x values between traces. e.g. it shouldn't go Male, 0-17, Female,
+  # 18-24, say. It should go Male, Female, 0-17, 18-24. Otherwise when selecting 
+  # between dropdowns you'll see categories from other traces.
   if (is.null(breakdown)) {
     
     data_processed <- data %>%
       arrange(
-        {{ group_type }}, {{ x }}
+        {{ dropdown }}, {{ x }}
       ) %>%
       mutate(
-        breakdown = {{ group_type }},
-        label_text = {{ group_type }}
+        breakdown = {{ dropdown }},
+        label_text = {{ dropdown }}
       )
     
     if (plot_type == "bar") {
       
       unique_breakdowns <- data_processed %>%
-        distinct({{ group_type }}, {{ x }}) %>%
+        distinct({{ dropdown }}, {{ x }}) %>%
         group_by({{ x }}) %>%
-        arrange({{ group_type }}) %>%
+        arrange({{ dropdown }}) %>%
         mutate(n = row_number()) %>%
         ungroup() %>%
         rowwise() %>%
@@ -89,86 +132,64 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
     breakdown_plot <- {{ breakdown }}
     breakdown <- formula_to_sym(breakdown)
     
-    unique_breakdowns <- data %>%
-      distinct({{ group_type }}, {{ breakdown }}) %>%
-      group_by({{ breakdown }}) %>%
-      arrange({{ group_type }}) %>%
-      mutate(n = row_number()) %>%
-      rowwise() %>%
-      mutate(
-        unique_breakdown = paste0(paste0(rep("<b></b>", n - 1), collapse = ""), {{ breakdown }})
-      ) %>%
-      select(-n)
-    
-    
     data_processed <- data %>%
-      left_join(
-        unique_breakdowns, by = intersect(colnames(.), colnames(unique_breakdowns))
-      ) %>%
+      make_unique_values({{ dropdown }}, {{ breakdown }}, "breakdown_orig") %>%
       mutate(
-        {{ breakdown }} := unique_breakdown
-      ) %>%
-      select(-unique_breakdown) %>%
-      arrange(
-        {{ group_type }}, {{ breakdown }}
-      ) %>%
-      mutate(
-        label_text = {{breakdown }},
-        {{ breakdown }} := factor({{ breakdown }}, levels = unique({{ breakdown }}))
+        label_text = {{ breakdown }}
       )
+
     
     if (is.character(pull(data, {{ x }})) | is.factor(pull(data, {{ x }}))) {
       
-      data_processed <- data_processed %>%
-        arrange({{ group_type }}, {{ x }}) %>%
-        mutate(
-          {{ x }} := factor({{ x }}, levels = unique({{ x }}))
-        ) %>%
+      data_processed <- data_processed  %>%
+        make_unique_values({{ dropdown }}, {{ x }}, "x_orig") %>%
         arrange(
-          {{ breakdown }}, {{ x }}
+          {{ x }}, {{ breakdown }}
         )
       
     }
   }
   
-  if (is.null(plot_title)) {
-    
-    plot_title <- ""
-    
-  }
-  # take plot titles. Max 1 per group_type
+  # take plot titles. Max 1 per dropdown
   plot_titles <- data_processed %>%
+    distinct({{ dropdown }}) %>%
     mutate(
-      plot_title = glue({{ plot_title }})
+      plot_name = {{ plot_title }}
     ) %>%
-    distinct({{ group_type }}, plot_title) %>%
-    pull(plot_title, name = {{ group_type }})
+    rowwise() %>%
+    mutate(
+      plot_name = glue(plot_name)
+    ) %>%
+    pull(plot_name, name = {{ dropdown }})
+  
+  plot_titles <- paste0("<b>", plot_titles, "</b>", "\n\n", y_axis_title)
   
   plot_titles_anno <- map(
     .x = plot_titles,
     .f = function(.x) {
       list(
         text = .x,
+        align = "left",
         showarrow = FALSE,
         x = -0.05,
         y = 1,
         xref = "paper",
         yref = "paper",
         xanchor = "left",
-        yanchor = "bottom"
+        yanchor = "bottom",
+        label = "title"
       )
     }
   )
   
-  
   # split data into a list
   data_list <- data_processed %>%
-    split(f = pull(., {{ group_type }}))
+    split(f = pull(., {{ dropdown }}))
   
   # ordering data and finding number of breaks
   groups <- data_processed %>%
-    distinct({{ group_type }}, {{ breakdown }}) %>%
-    group_by({{ group_type }}, {{ breakdown }}) %>%
+    distinct({{ dropdown }}, {{ breakdown }}) %>%
+    group_by({{ dropdown }}, {{ breakdown }}) %>%
     summarise(
       n = n(),
       .groups = "drop"
@@ -176,43 +197,64 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
   
   # if we have bars AND lines then there will be an extra trace for each dropdown
   # option. this has to be added to the visible_list
-  if (!is.null(args$bar_line)) {
+  if (!is.null(bar_line)) {
+    
+    line_breakdown <- formula_to_sym(args$line_breakdown)
     
     groups_line <- data_processed %>%
-      distinct({{ group_type }})
+      group_by({{ dropdown }}, {{ line_breakdown }}) %>%
+      summarise(
+        all_nas = all(is.na({{ bar_line }})),
+        .groups = "drop"
+      ) %>%
+      filter(!all_nas)
     
     groups <- groups %>%
       bind_rows(groups_line) %>%
-      arrange({{ group_type }}, {{ breakdown }})
+      arrange({{ dropdown }}, {{ breakdown }})
     
   }
   
   visible_list <- map(
-    .x = unique(pull(groups, {{ group_type }})),
+    .x = unique(pull(groups, {{ dropdown }})),
     .f = function(.x, groups) {
-      pull(groups, {{ group_type }}) == .x
+      pull(groups, {{ dropdown }}) == .x
     },
     groups = groups
   )
   
+  # if using the same colour scheme between plots match up colours
+  # if not then make a colour palette for each dropdown
+  if (length(palette) > 1) {
+    
+    data_processed$palette <- palette[data_processed$breakdown_orig]
+    
+    palette_df <- distinct(data_processed, {{ breakdown }}, palette)
+    
+    palette_names <- pull(palette_df, {{ breakdown }})
+    
+    colour_palette <- pull(palette_df, palette) %>%
+      set_names(palette_names)
+    
+  } else {
+    
+    n_colours <- data_processed %>%
+      distinct({{ dropdown }}, {{ breakdown }}) %>%
+      group_by({{ dropdown }}) %>%
+      summarise(
+        n = n(),
+        .groups = "drop"
+      )
+    
+    colour_palette <- map(
+      .x = pull(n_colours, n),
+      .f = function(n){
+        make_colour_palette(n, palette)
+      }
+    ) %>%
+      flatten_chr()
   
-  
-  n_colours <- data_processed %>%
-    distinct({{ group_type }}, {{ breakdown }}) %>%
-    group_by({{ group_type }}) %>%
-    summarise(
-      n = n(),
-      .groups = "drop"
-    )
-  
-  colour_palette <- map(
-    .x = pull(n_colours, n),
-    .f = function(n){
-      make_colour_palette(n, "PuBu")
-    }
-  ) %>%
-    flatten_chr()
-  
+  }
   
   plot_init <- plot_ly()
   
@@ -220,36 +262,58 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
   visible[1] <- TRUE
   
   
+  # Run through plots ----------------------------------------------------------
+  # Run through data_list turning each one into a plot trace
+  # Only the first plot will be visible at first
   plot <- switch(
     plot_type,
+    # Bar plot -----------------------------------------------------------------
     "bar" = reduce2(
       .x = data_list,
       .y = visible,
-      .f = function(plot, data, visible, x_plot, y_plot, breakdown_plot, errors, ...){
-        bar_chart(
+      .f = function(plot, data, visible, x_plot, y_plot, breakdown_plot, errors, orientation, ...){
+        plot <- bar_chart(
           plot = plot,
-          data = data,
+          data = arrange_(data, {{ breakdown_plot }}),
           x = x_plot,
           visible = visible,
           y = y_plot,
+          bar_line = bar_line_plot,
           breakdown = breakdown_plot,
           colour_palette = colour_palette,
-          error_y = errors,
+          error_y = error_y,
+          error_x = error_x,
+          orientation = orientation,
           ...
-        )
+        ) %>% 
+          layout(
+            yaxis = list(
+              titlefont = list(
+                color = "#FFFFFFFF",
+                size = 0
+              ),
+              rangemode = "tozero"
+            )
+          )
+        
+        plot
+        
+        
       },
       x_plot = x_plot,
       y_plot = y_plot,
       breakdown_plot = breakdown_plot,
       errors = errors,
+      orientation = orientation,
       ...,
       .init = plot_init
     ),
+    # Line plot ----------------------------------------------------------------
     "line" = reduce2(
       .x = data_list,
       .y = visible,
       .f = function(plot, data, visible, x_plot, y_plot, breakdown_plot, gap_factor, ...){
-        line_chart(
+        plot <- line_chart(
           plot = plot,
           data = data,
           x = x_plot,
@@ -260,7 +324,19 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
           gap_factor = gap_factor,
           colour_palette = colour_palette,
           ...
-        )
+        ) %>% 
+          layout(
+            yaxis = list(
+              titlefont = list(
+                color = "#FFFFFFFF",
+                size = 0
+              ),
+              rangemode = "tozero"
+            )
+          )
+        
+        plot
+        
       },
       x_plot = x_plot,
       y_plot = y_plot,
@@ -271,67 +347,23 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
     )
   )
   
-  # Add labels -----------------------------------------------------------------
-  if (plot_type == "line"){
-    annotations <- map(
-      .x = data_list,
-      .f = function(data, x_plot, y_plot, label_text, gap_factor){
-        add_labels(
-          data = data,
-          x = x_plot,
-          y = y_plot,
-          breakdown = ~label_text,
-          gap_factor = gap_factor
-        )
-      },
-      x_plot = x_plot,
-      y_plot = y_plot,
-      gap_factor = gap_factor
-    )
-    
-    buttons <- pmap(
-      list(
-        visible_list = visible_list,
-        annotation = annotations,
-        name = names(data_list)
-      ),
-      .f = function(visible_list, annotation, name) {
-        list(
-          method = "update",
-          args = list(
-            list(visible = visible_list),
-            list(
-              annotations = annotation$annotations,
-              shapes =  annotation$shapes
-            )
-          ),
-          label = name
-        )
-      }
-    )
-    
-  } else {
-    
-    buttons <- map2(
-      visible_list,
-      names(data_list),
-      .f = function(visible_list, names){
-        
-        list(
-          method = "restyle",
-          args = list(
-            "visible", visible_list
-          ),
-          label = names
-        )
-        
-      }
-    )
-    
-  }
+  # Extra annotations ----------------------------------------------------------
+  extra_annotation_list <- map(
+    data_list,
+    function(data) {
+      make_extra_labels(data, text, x_plot, y_plot, xnudge, ynudge)
+    }
+  )
   
-  #
+  # returns null for bar plot
+  annotations <- dropdowns_add_labels(
+    data_list, plot_type, x_plot, y_plot, label_text, gap_factor, extra_annotation_list
+  )
   
+  # Create buttons for dropdown ------------------------------------------------
+  buttons <- dropdowns_add_buttons(
+    data_list, annotations, visible_list, plot_titles_anno
+  )
   
   # Legend formatting
   legend_options <- list(
@@ -346,12 +378,13 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
     itemclick = "toggleothers"
   )
   
-  plot %>%
+  # Final plot with formatting -------------------------------------------------
+  # Make plot with buttons and other formatting
+  plot <- plot %>%
     plotly::layout(
       updatemenus = list(
         list(
           showactive = TRUE,
-          active = 0,
           x = -0.05,
           y = 1.3,
           xanchor = "left",
@@ -361,26 +394,9 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
       font = global_font,
       legend = legend_options,
       autosize = TRUE,
-      xaxis = list(title = x_axis_title),
-      yaxis = list(
-        title = y_axis_title,
-        titlefont = list(
-          color = "#FFFFFFFF",
-          size = 0
-        ),
-        rangemode = "tozero"
-      ),
-      plot_bgcolor = "transparent"
-    ) %>%
-    add_annotations(
-      text = y_axis_title,
-      showarrow = FALSE,
-      x = -0.05,
-      y = 1,
-      xref = "paper",
-      yref = "paper",
-      xanchor = "left",
-      yanchor = "bottom"
+      plot_bgcolor = "transparent",
+      yaxis = y_axis_options,
+      xaxis = x_axis_options
     ) %>%
     config(
       displaylogo = FALSE,
@@ -398,60 +414,21 @@ dropdown_plots <- function(data, x, y, group_type, plot_type = c("bar", "line"),
       )
     )
   
-  
+  if (fix_axes) {
+    plot <- axis_buttons_fix(plot, y_axis_title, x_axis_title)
+  }
+
+  plot %>%
+  layout(
+    annotations = append(plot_titles_anno[1], extra_annotation_list[[1]]),
+    xaxis = list(
+      title = x_axis_title[1]
+    ),
+    yaxis = list(
+      title = y_axis_title[1]
+    )
+  )
   
 }
 
 
-
-# plot <- line_chart(
-#   plot = plot_init,
-#   data = data_processed[[1]],
-#   x = x_plot,
-#   visible  = TRUE,
-#   y = y_plot,
-#   breakdown = group_plot,
-#   add_labels = FALSE,
-#   showlegend = FALSE,
-#   colour_palette = colour_palette,
-#   ...
-# ) %>%
-#   line_chart(
-#     data = data_processed[[2]],
-#     x = x_plot,
-#     visible  = TRUE,
-#     y = y_plot,
-#     breakdown = group_plot,
-#     add_labels = FALSE,
-#     showlegend = FALSE,
-#     colour_palette = colour_palette,
-#     ...
-#   )
-# 
-# plot %>%
-#   layout(
-#     updatemenus = list(
-#       list(
-#         active = 0,
-#         x = 0,
-#         y = 1.2,
-#         xanchor = "left",
-#         buttons = list(
-#           list(
-#             method = "restyle",
-#             args = list(
-#               "visible", c(TRUE, TRUE, FALSE, FALSE)
-#             ),
-#             label = "A"
-#           ),
-#           list(
-#             method = "restyle",
-#             args = list(
-#               "visible", c(FALSE, FALSE, TRUE, TRUE)
-#             ),
-#             label = "B"
-#           )
-#         )
-#       )
-#     )
-#   )

@@ -1,13 +1,51 @@
+#' Title
+#'
+#' @param data 
+#' @param x 
+#' @param y 
+#' @param breakdown 
+#' @param legend_group 
+#' @param lci 
+#' @param uci 
+#' @param x_axis_title 
+#' @param y_axis_title 
+#' @param plot_title 
+#' @param palette 
+#' @param hover_over 
+#' @param plot_type 
+#' @param line_mode 
+#' @param line_connect_gaps 
+#' @param barmode 
+#' @param orientation 
+#' @param bar_line 
+#' @param bar_line_name 
+#' @param legend_name 
+#' @param showlegend 
+#' @param add_labels 
+#' @param gap_factor 
+#' @param transforms 
+#' @param dtick 
+#' @param tick0 
+#' @param y_axis_range 
+#' @param line_hover_over 
+#' @param top_margin 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lci = NULL, uci = NULL, 
                       x_axis_title = NULL, y_axis_title = NULL, plot_title = NULL,
-                      palette_name = "PuBu", hover_over = NULL, plot_type = c("bar", "line"),
+                      palette = "PuBu", hover_over = NULL, plot_type = c("bar", "line"),
                       line_mode = "lines", line_connect_gaps = TRUE,
-                      barmode = "group", orientation = "v",
-                      bar_line, bar_line_name, legend_name = NULL, showlegend = TRUE,
+                      barmode = "group", orientation = "v",  line_colour = "#FF7F0E",
+                      bar_line = NULL, bar_line_name = NULL, legend_name = NULL, showlegend = TRUE,
                       add_labels = TRUE, gap_factor = 0.045, transforms = NULL,
-                      y_axis_range = NULL, line_hover_over = hover_over, top_margin = 70){
+                      dtick = NULL, tick0 = NULL, text = NULL, xnudge = 0, ynudge = 0,
+                      y_axis_range = NULL, line_hover_over = hover_over, top_margin = 70,
+                      figure_name = NULL){
   
-  
+  # Set up ---------------------------------------------------------------------
   plot_type <- match.arg(plot_type)
   
   # error bars
@@ -36,10 +74,6 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
     )
   }
   
-  if (is.null(y_axis_range)) {
-    y_axis_range <- set_y_axis_range(data, y)
-  }
-  
   # swapping labels for horizontal bar plot
   if (orientation == "h") {
     x_axis_temp <- x_axis_title
@@ -55,17 +89,16 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
     y <- x
     x <- y_temp
     
-    x_axis_range <- y_axis_range
-    y_axis_range <- NULL
-    
   } else {
     
     error_x <- NULL
     error_y <- errors
     
-    y_axis_range <- y_axis_range
-    x_axis_range <- NULL
-    
+  }
+  
+  # Save data ------------------------------------------------------------------
+  if (!is.null(figure_name)) {
+    save_data(data, x = x, y = y, breakdown = breakdown, bar_line = bar_line, figure_name = figure_name)
   }
   
   # ordering data and finding number of breaks
@@ -75,13 +108,20 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
       unique() %>%
       length()
     
-    colour_palette <- make_colour_palette(n, palette_name)
+    if (length(palette) == 1) {
+      colour_palette <- make_colour_palette(n, palette)
+    } else {
+      colour_palette <- palette
+    }
     
     # plotly occasionally bugs out when there is missing data. arranging by the 
     # breakdown fixes this. we use arrange_() instead of arrange() because we 
     # pass columns names as formulae (with a ~ at the start) for plotly
     data <- data %>%
-      arrange_({{ x }}, {{ breakdown }})
+      # arranging by x first can fix some weird issues with line plots where 
+      # they make loops. NOTE: this isn't the same as doing arrange(x, breakdown)!!
+      arrange_({{ x }}) %>%
+      arrange_({{ breakdown }})
     
     
   } else {
@@ -103,7 +143,8 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
     # breakdown fixes this. we use arrange_() instead of arrange() because we 
     # pass columns names as formulae (with a ~ at the start) for plotly
     data <- data %>%
-      arrange_({{ x }}, {{ breakdown }})
+      arrange_({{ x }}) %>%
+      arrange_({{ breakdown }})
     
     colour_palette <- "#2B8CBE"
   }
@@ -119,7 +160,8 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
     xref = "paper",
     yref = "paper",
     bgcolor = "transparent",
-    itemclick = "toggleothers"
+    itemclick = "toggleothers",
+    traceorder = "normal"
   )
   
   # Plot data ------------------------------------------------------------------
@@ -132,7 +174,7 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
     "bar" = bar_chart(
       plot = plot, data = data, x = x, y = y, breakdown = breakdown,
       hover_over = hover_over, orientation = orientation,
-      bar_line = bar_line, bar_line_name = bar_line_name, 
+      bar_line = bar_line, bar_line_name = bar_line_name, line_colour = line_colour,
       legend_name = legend_name, colour_palette = colour_palette, 
       barmode = barmode, error_x = error_x, error_y = error_y,
       showlegend = showlegend, legend_group = legend_group, transforms = transforms,
@@ -147,6 +189,11 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
     )
   )
   
+  tick0_dtick <- tick0_dtick(data, {{ x }}, tick0, dtick)
+  
+  # Extra annotations ----------------------------------------------------------
+  extra_annotation_list <- make_extra_labels(data, text, x, y, xnudge, ynudge)
+  
   # extra layout options
   plot %>% 
     plotly::layout(
@@ -155,7 +202,8 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
       autosize = TRUE,
       xaxis = list(
         title = x_axis_title,
-        range = x_axis_range
+        tick0 = tick0_dtick$tick0,
+        dtick = tick0_dtick$dtick
       ),
       # hide the y-axis label from its usual place - we want it on the top of
       # the y axis, horizontally
@@ -168,11 +216,12 @@ make_plot <- function(data, x, y, breakdown = NULL, legend_group = breakdown, lc
         rangemode = "tozero"
       ),
       plot_bgcolor = "transparent",
-      margin = list(t = top_margin)
+      margin = list(t = top_margin),
+      annotations = extra_annotation_list
     ) %>%
     # add the y-axis label as an annotation
     add_annotations(
-      text = paste("<b>", plot_title, "</b>", y_axis_title, sep = "\n"),
+      text = paste0("<b>", plot_title, "</b>", "\n\n", y_axis_title),
       align = "left",
       showarrow = FALSE,
       x = -0.05,
@@ -263,10 +312,10 @@ line_chart <- function(plot, data, x, y, colour_palette, breakdown = NULL, legen
 # Bar Chart --------------------------------------------------------------------
 bar_chart <- function(plot, data, x, y, breakdown = NULL, legend_group = breakdown,
                       hover_over = NULL, orientation = "v", showlegend = TRUE,
-                      bar_line, bar_line_name = NULL, line_colour = "#FF7F0E",
+                      bar_line = NULL, bar_line_name = NULL, line_colour = "#FF7F0E",
                       legend_name = NULL, colour_palette, 
                       barmode = "group", error_x = NULL, error_y = NULL, transforms = NULL,
-                      visible = TRUE, line_hover_over = hover_over) {
+                      visible = TRUE, line_hover_over = hover_over, line_breakdown = NULL) {
   
   plot <- plot %>%
     add_trace(
@@ -292,21 +341,33 @@ bar_chart <- function(plot, data, x, y, breakdown = NULL, legend_group = breakdo
     )
   
   # add line if specified
-  if (!missing(bar_line)) {
-    plot <- plot %>%
-      add_trace(
-        x = {{ x }},
-        y = {{ bar_line }},
-        legendgroup = "line",
-        type = 'scatter',
-        mode = 'lines', 
-        name = bar_line_name,
-        inherit = FALSE,
-        line = list(color = line_colour),
-        hovertemplate = line_hover_over,
-        showlegend = showlegend,
-        visible = visible
-      )
+  if (!is.null(bar_line)) {
+    
+    bar_line_sym <- formula_to_sym(bar_line)
+    
+    all_nas <- pull(data, {{ bar_line_sym }}) %>%
+      is.na() %>%
+      all()
+    
+    if (!all_nas) {
+    
+      plot <- plot %>%
+        add_trace(
+          x = {{ x }},
+          y = {{ bar_line }},
+          legendgroup = "line",
+          type = 'scatter',
+          mode = 'lines', 
+          split = {{ line_breakdown }},
+          linetype = {{ line_breakdown }},
+          name = bar_line_name,
+          inherit = FALSE,
+          line = list(color = line_colour),
+          hovertemplate = line_hover_over,
+          showlegend = showlegend,
+          visible = visible
+        )
+    }
   }
   
   plot
